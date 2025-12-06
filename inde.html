@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="uz">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Attendance — Davomat</title>
+  <style>
+    :root {
+      --bg: black;
+      --card: #282828;
+      --muted: rgb(149, 136, 136);
+      --accent: #3b82f6;
+      --success: #10b981;
+      --danger: #ef4444;
+      --shadow: 0 6px 18px rgba(23, 32, 45, 0.06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, var(--bg), black);
+      padding: 24px;
+      color: #7d8db3;
+    }
+
+    .container {
+      max-width: 1024px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+    }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    /* Form */
+    .addRow {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px
+    }
+
+    .addRow input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #e6eef8
+    }
+
+    .addRow button {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      cursor: pointer
+    }
+
+    /* List */
+    .list {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 480px;
+      overflow: auto;
+      padding-right: 6px
+    }
+
+    .student {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #f0f6ff;
+      background: linear-gradient(180deg, #fff, #fbfdff);
+    }
+
+    .info {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #e2eefc, #f8fbff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: var(--accent)
+    }
+
+    .meta {
+      display: flex;
+      flex-direction: column
+    }
+
+    .meta .name {
+      font-weight: 600
+    }
+
+    .meta .muted {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px
+    }
+
+    .present {
+      background: var(--success);
+      color: white
+    }
+
+    .absent {
+      background: var(--danger);
+      color: white
+    }
+
+    .small {
+      padding: 6px 8px;
+      font-size: 12px
+    }
+
+    /* Right column */
+    .statsTitle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between
+    }
+
+    .stat {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #fff, #fbfdff);
+      margin-top: 10px
+    }
+
+    .barWrap {
+      height: 12px;
+      background: #eef2ff;
+      border-radius: 999px;
+      width: 100%;
+      overflow: hidden
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px
+    }
+
+    /* Responsive */
+    @media (max-width:920px) {
+      .container {
+        grid-template-columns: 1fr;
+        padding-bottom: 60px;
+      }
+    }
+
+    /* tiny */
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px
+    }
+
+    .search {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #e6eef8
+    }
+
+    .export {
+      background: #111827;
+      color: white;
+      border-radius: 8px;
+      padding: 8px 10px;
+      border: none;
+      cursor: pointer
+    }
+
+    /* Empty */
+    .empty {
+      padding: 20px;
+      text-align: center;
+      color: var(--muted);
+      border-radius: 8px;
+      border: 1px dashed #e6eef8
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div>
+      <div class="card">
+        <header>
+          <h1>Smart Attendance — Davomat</h1>
+          <p>Talabalar roʻyxati. Keldi / Kelmadi ni belgilab, statistikani ko‘rish mumkin.</p>
+        </header>
+
+        <div class="controls">
+          <input class="search" id="search" placeholder="Ism bo'yicha qidirish..." />
+          <button class="export" id="exportBtn">Export CSV</button>
+        </div>
+
+        <div class="addRow">
+          <input id="nameInput" placeholder="Yangi talaba ismi..." />
+          <button id="addBtn">Qoʻshish</button>
+        </div>
+
+        <div id="list" class="list" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="card">
+        <div class="statsTitle">
+          <div>
+            <strong>Statistika</strong>
+            <div style="font-size:12px;color:var(--muted)">Jami ta'lim guruhi holati</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted)"><span id="totalCount">0</span> talaba</div>
+        </div>
+
+        <div class="stat">
+          <div style="width:88px;text-align:center;">
+            <div style="font-size:18px;font-weight:700" id="presentCount">0</div>
+            <div style="font-size:12px;color:var(--muted)">Keldi</div>
+          </div>
+          <div style="flex:1">
+            <div class="barWrap" aria-hidden="true">
+              <div id="presentBar" class="bar"
+                style="width:0%;background:linear-gradient(90deg,var(--success),#6ee7b7)"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stat">
+          <div style="width:88px;text-align:center;">
+            <div style="font-size:18px;font-weight:700" id="absentCount">0</div>
+            <div style="font-size:12px;color:var(--muted)">Kelmadi</div>
+          </div>
+          <div style="flex:1">
+            <div class="barWrap" aria-hidden="true">
+              <div id="absentBar" class="bar" style="width:0%;background:linear-gradient(90deg,var(--danger),#fb7185)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;font-size:13px;color:var(--muted)">
+          <strong>Bugungi sana:</strong> <span id="today"></span>
+        </div>
+
+        <div style="margin-top:12px">
+          <button id="resetBtn" class="btn small" style="background:#fff;border:1px solid #e6eef8">Barchasini qayta
+            tiklash</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // --- Utility functions ---
+    const $ = sel => document.querySelector(sel);
+    const qs = sel => document.querySelectorAll(sel);
+
+    // Storage key (per date)
+    const DATE = new Date().toISOString().slice(0, 10);
+    const STORAGE_KEY = 'attendance_' + DATE;
+
+    // Elements
+    const listEl = $('#list');
+    const addBtn = $('#addBtn');
+    const nameInput = $('#nameInput');
+    const presentCountEl = $('#presentCount');
+    const absentCountEl = $('#absentCount');
+    const totalCountEl = $('#totalCount');
+    const presentBar = $('#presentBar');
+    const absentBar = $('#absentBar');
+    const todayEl = $('#today');
+    const resetBtn = $('#resetBtn');
+    const exportBtn = $('#exportBtn');
+    const search = $('#search');
+
+    todayEl.textContent = new Date().toLocaleDateString();
+
+    // Load / Save
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch (e) { return []; }
+    }
+    function save(arr) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+      render();
+    }
+
+    // Initial render
+    function render(filter = '') {
+      const students = load();
+      listEl.innerHTML = '';
+      if (students.length === 0) {
+        listEl.innerHTML = '<div class="empty">Hech qanday talaba qoʻshilmagan. Yuqoridagi maydondan qoʻshing.</div>';
+      } else {
+        students
+          .filter(s => s.name.toLowerCase().includes(filter.toLowerCase()))
+          .forEach((s, i) => {
+            const div = document.createElement('div');
+            div.className = 'student';
+            div.innerHTML = `
+              <div class="info">
+                <div class="avatar">${s.name.split(' ').map(n => n[0] || '').slice(0, 2).join('').toUpperCase()}</div>
+                <div class="meta">
+                  <div class="name">${escapeHtml(s.name)}</div>
+                  <div class="muted">ID: ${s.id}</div>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="btn small ${s.present ? 'present' : ''}" data-act="toggle">${s.present ? 'Keldi' : 'Kelmadi'}</button>
+                <button class="btn small" data-act="remove">O'chirish</button>
+              </div>
+            `;
+            // Events
+            div.querySelector('[data-act="toggle"]').addEventListener('click', () => {
+              students[i].present = !students[i].present;
+              save(students);
+            });
+            div.querySelector('[data-act="remove"]').addEventListener('click', () => {
+              if (!confirm('Talabani roʻyxatdan oʻchirmoqchimisiz?')) return;
+              students.splice(i, 1); save(students);
+            });
+
+            listEl.appendChild(div);
+          });
+      }
+
+      // Stats
+      const total = students.length;
+      const present = students.filter(s => s.present).length;
+      const absent = total - present;
+      presentCountEl.textContent = present;
+      absentCountEl.textContent = absent;
+      totalCountEl.textContent = total;
+      const pPct = total ? Math.round((present / total) * 100) : 0;
+      const aPct = total ? Math.round((absent / total) * 100) : 0;
+      presentBar.style.width = pPct + '%';
+      absentBar.style.width = aPct + '%';
+    }
+
+    // Helpers
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function (m) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]; });
+    }
+    function uid() { return Math.random().toString(36).slice(2, 9); }
+
+    // Add student
+    addBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      if (!name) return alert('Ism kiriting.');
+      const arr = load();
+      arr.push({ id: uid(), name, present: false });
+      save(arr);
+      nameInput.value = '';
+      nameInput.focus();
+    });
+
+    // Enter press
+    nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addBtn.click(); });
+
+    // Reset
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Jami ro‘yxat o‘chiriladi. Davom etilsinmi?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      render();
+    });
+
+    // Export CSV
+    exportBtn.addEventListener('click', () => {
+      const arr = load();
+      if (arr.length === 0) return alert('Hech narsa eksport qilish uchun yo‘q.');
+      const rows = [['id', 'name', 'present']];
+      arr.forEach(r => rows.push([r.id, r.name, r.present ? 'Keldi' : 'Kelmadi']));
+      const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance_${DATE}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // Search
+    search.addEventListener('input', (e) => render(e.target.value));
+
+    // initial
+    render();
+
+    // Accessibility: announce date in console
+    console.log('Attendance loaded for', DATE);
+  </script>
+</body>
+
+</html>
